@@ -1,4 +1,9 @@
-var pryvConn = null; // global holder for the connection
+
+
+var pryvHF = {
+  pryvConn: null, // global holder for the connection
+  xEvent: null // HF event serie for x data
+};
 
 /*globals document, pryv*/
 (function () {
@@ -13,25 +18,63 @@ var pryvConn = null; // global holder for the connection
   var previousTick = Date.now();
 
 
+  var xBuffer = []; // holds data to be posted
+
+
   document.onmousemove = function (event) {
+    var now = Date.now();
     xLabel.innerHTML =  event.pageX;
     yLabel.innerHTML =  event.pageY;
+
+    xBuffer.push([now, event.pageX]);
 
     counter += 2;
   };
 
-  function sample() {
+  function sampleHz() {
     var now = Date.now();
-
     frequencyLabel.innerHTML = Math.round(counter * 1000 /  (now - previousTick));
     counter = 0;
     previousTick = now;
-
-    setTimeout(sample, samplingMs);
+    setTimeout(sampleHz, samplingMs);
   }
 
-  sample();
+  sampleHz();
+
+  // --- Post logic
+
+  var samplePostMs = 100;
+
+
+
+  function samplePost() {
+    if (pryvHF.xEvent && xBuffer.length > 0) {
+      var nBuffer = xBuffer;
+      xBuffer = [];
+      postSerie(pryvHF.pryvConn, pryvHF.xEvent, nBuffer, function (err, res) { 
+          console.log('Posted ' + nBuffer.length + ' events', err, res);
+      });
+    }
+    setTimeout(samplePost, samplePostMs);
+  }
+
+  setTimeout(samplePost, samplePostMs);
+
 })();
+
+
+function postSerie(connection, event, points, done) {
+  connection.request({
+    withoutCredentials: true,
+    method: 'POST',
+    path: '/events/' + event.id + '/series',
+    jsonData: {
+      format: 'flatJSON',
+      fields: event.content.fields,
+      points: points
+    },
+    callback: done});
+}
 
 
 function setupConnection(connection) {
@@ -44,8 +87,7 @@ function setupConnection(connection) {
       method: 'events.create',
       params: {
         streamId: 'hfdemo',
-        type: 'count/generic',
-        content: '0',
+        type: 'series:count/generic',
         description: 'Holder for x mouse position'
       }
     }
@@ -53,8 +95,8 @@ function setupConnection(connection) {
 
   var resultTreatment = [
     function handleCreateEventX(result) {
-
-      console.log("handle event", result.event.id);
+      pryvHF.xEvent = result.event;
+      console.log("X handle set", pryvHF.xEvent);
     }
   ];
 
@@ -71,14 +113,14 @@ function setupConnection(connection) {
           resultTreatment[i].call(null, result.results[i]);
         }
       } else {
-
+        console.log(' No result!!', resultInfo);
       }
 
     }
   });
 
 
-  pryvConn = connection;
+  pryvHF.pryvConn = connection;
 
 }
 
@@ -86,7 +128,7 @@ function setupConnection(connection) {
 // Retrieve last events
 function getLastEvents() {
   var filter = new pryv.Filter({limit : 20});
-  pryvConn.events.get(filter, function (err, events) {
+  pryvHF.pryvConn.events.get(filter, function (err, events) {
     // convert pryv.Event objects to plain data for display
     display(events.map(function (e) { return e.getData(); }), $events);
   });
