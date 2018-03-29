@@ -1,3 +1,5 @@
+var pryvConn = null; // global holder for the connection
+
 /*globals document, pryv*/
 (function () {
 
@@ -34,7 +36,63 @@
 
 function setupConnection(connection) {
   console.log("Connection done!");
+
+  // A- retrieve previously created events or create events holders
+
+  var postData = [
+    {
+      method: 'events.create',
+      params: {
+        streamId: 'hfdemo',
+        type: 'count/generic',
+        content: '0',
+        description: 'Holder for x mouse position'
+      }
+    }
+  ];
+
+  var resultTreatment = [
+    function handleCreateEventX(result) {
+
+      console.log("handle event", result.event.id);
+    }
+  ];
+
+
+  connection.request({
+    method: 'POST',
+    path: '/',
+    jsonData: postData,
+    callback: function (err, result, resultInfo) {
+      if (err) { return console.log('...error: ' + JSON.stringify([err, result])); }
+      console.log('...event created: ' + JSON.stringify(result));
+      if (result && result.results) {
+        for (var i = 0; i < result.results.length; i++) {
+          resultTreatment[i].call(null, result.results[i]);
+        }
+      } else {
+
+      }
+
+    }
+  });
+
+
+  pryvConn = connection;
+
 }
+
+// UTILS
+// Retrieve last events
+function getLastEvents() {
+  var filter = new pryv.Filter({limit : 20});
+  pryvConn.events.get(filter, function (err, events) {
+    // convert pryv.Event objects to plain data for display
+    display(events.map(function (e) { return e.getData(); }), $events);
+  });
+}
+
+
 
 
 
