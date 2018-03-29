@@ -22,7 +22,7 @@ var pryvHF = {
 
 
   document.onmousemove = function (event) {
-    var now = Date.now();
+    var now = Date.now() / 1000;
     xLabel.innerHTML =  event.pageX;
     yLabel.innerHTML =  event.pageY;
 
@@ -43,7 +43,7 @@ var pryvHF = {
 
   // --- Post logic
 
-  var samplePostMs = 100;
+  var samplePostMs = 1000;
 
 
 
