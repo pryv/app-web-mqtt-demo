@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pryv HF Mouse Tracker</title>
+</head>
+<body>
+
+<div class="container">
+  <div class="topBar">
+    <div class="titleContainer">
+      <div class="pryvLogo">
+        <a href="http://api.pryv.com/" target="_blank">
+          <img src="img/loader.gif" id="loading"><img>
+          <img src="img/logo-pryv.png" id="logo-pryv"><img>
+        </a>
+      </div>
+      <div class="title">
+        <h3>Pryv HF Mouse Tracker</h3>
+      </div>
+    </div>
+    <div class="buttonContainer">
+      <span id="pryv-button"></span>
+    </div>
+  </div>
+  <div class="subContainer">
+    <div class="choice">
+      <label>
+
+      </label>
+    </div>
+  </div>
+  <div class="sharingcontainer">
+    <div class="sharinglink">
+      <label id="sharelink">
+        -
+      </label>
+    </div>
+    <div class="shareqr">
+      <label>
+        -
+      </label>
+    </div>
+  </div>
+</div>
+
+
+
+<div class="valueContainer">
+  Frequency: <span id="frequencyLabel"></span> measures/second  (Hz)
+</div>
+<div class="valueContainer">
+  X: <span id="xLabel"></span>
+</div>
+<div class="valueContainer">
+  Y: <span id="yLabel"></span>
+</div>
+
+</body>
+<script src="pryv.js"></script>
+<script src="index.js"></script>
+<link href="style.css" rel="stylesheet" type="text/css"/>
+
+</html>
