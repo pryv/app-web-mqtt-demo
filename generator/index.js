@@ -170,12 +170,9 @@ function getSettingsFromURL() {
   return null;
 }
 
-function setupShareLink (connect) {
+function setupShareLink(connect) {
   var urlLabel = document.getElementById('sharelink');
-  urlLabel.innerHTML = ('' + document.location).split('?')[0] +
-    '?username=' + connect.username +
-    '&domain=' + connect.domain +
-    '&auth=' + connect.auth;
+  urlLabel.innerHTML = ('<a target="_new" href="https://pryv.github.io/app-web-plotly/?pryv-reg=reg.preview.pryv.tech">FOLLOW ON PLOTLY APP</A>');
 }
 
 document.onreadystatechange = function () {
@@ -208,6 +205,7 @@ document.onreadystatechange = function () {
           needSignin: null,
           needValidation: null,
           signedIn: function (connect) {
+            setupShareLink(connect);
             connect.fetchStructure(function () {
               setupConnection(connect);
             });
