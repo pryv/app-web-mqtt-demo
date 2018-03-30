@@ -7845,7 +7845,6 @@ Connection.prototype.request = function (params) {
   }
   var headers =  { 'authorization': this.auth };
   var withoutCredentials = params.withoutCredentials ? true : false;
-  console.log('zobi ' + params.withoutCredentials, withoutCredentials);
   var payload = JSON.stringify({});
   if (params.jsonData && !params.isFile) {
     payload = JSON.stringify(params.jsonData);

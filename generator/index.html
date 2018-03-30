@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Pryv HF Mouse Tracker</title>
+  <title>Pryv Mouse Tracker</title>
 </head>
 <body>
 
@@ -16,7 +16,7 @@
         </a>
       </div>
       <div class="title">
-        <h3>Pryv HF Mouse Tracker</h3>
+        <h3>Pryv Mouse Tracker</h3>
       </div>
     </div>
     <div class="buttonContainer">
@@ -24,10 +24,20 @@
     </div>
   </div>
   <div class="subContainer">
-    <div class="choice">
-      <label>
-
-      </label>
+    <div class="valueContainer">
+      Frequency: <span id="frequencyLabel"></span> measures/second  (Hz)
+    </div>
+    <div class="valueContainer">
+      X: <span id="xLabel"></span>
+    </div>
+    <div class="valueContainer">
+      Y: <span id="yLabel"></span>
+    </div>
+    <div class="valueContainer">
+      Measures buffer: <span id="dataBuffer"></span>
+    </div>
+    <div class="valueContainer">
+      Measures sent Total: <span id="dataSent"></span>
     </div>
   </div>
   <div class="sharingcontainer">
@@ -46,15 +56,7 @@
 
 
 
-<div class="valueContainer">
-  Frequency: <span id="frequencyLabel"></span> measures/second  (Hz)
-</div>
-<div class="valueContainer">
-  X: <span id="xLabel"></span>
-</div>
-<div class="valueContainer">
-  Y: <span id="yLabel"></span>
-</div>
+
 
 </body>
 <script src="pryv.js"></script>

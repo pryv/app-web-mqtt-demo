@@ -11,6 +11,8 @@ var pryvHF = {
   var xLabel = document.getElementById('xLabel');
   var yLabel = document.getElementById('yLabel');
   var frequencyLabel = document.getElementById('frequencyLabel');
+  var dataSentLabel = document.getElementById('dataSent');
+  var dataBufferLabel = document.getElementById('dataBuffer');
 
   var samplingMs = 100;
 
@@ -34,6 +36,7 @@ var pryvHF = {
   function sampleHz() {
     var now = Date.now();
     frequencyLabel.innerHTML = Math.round(counter * 1000 /  (now - previousTick));
+    dataBufferLabel.innerHTML = xBuffer.length;
     counter = 0;
     previousTick = now;
     setTimeout(sampleHz, samplingMs);
@@ -46,19 +49,22 @@ var pryvHF = {
   var samplePostMs = 1000;
 
 
+  var sendCount = 0;
 
   function samplePost() {
     if (pryvHF.xEvent && xBuffer.length > 0) {
       var nBuffer = xBuffer;
       xBuffer = [];
-      postSerie(pryvHF.pryvConn, pryvHF.xEvent, nBuffer, function (err, res) { 
-          console.log('Posted ' + nBuffer.length + ' events', err, res);
+      postSerie(pryvHF.pryvConn, pryvHF.xEvent, nBuffer, function (err, res) {
+        sendCount += nBuffer.length;
+        dataSentLabel.innerHTML = sendCount;
       });
     }
     setTimeout(samplePost, samplePostMs);
+
   }
 
-  setTimeout(samplePost, samplePostMs);
+  samplePost();
 
 })();
 
