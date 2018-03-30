@@ -6,12 +6,23 @@ Test it online on github [/generator/index.html?pryv-reg=reg.preview.pryv.tech](
 
 This web app will track your mouse and post it as a *series:xx/xx* event
 
-# Status
+### Implementation
+
+- Mouse is tracked and x positions are buffered
+- When connecting
+	- An event of type 'series:count/generic' is created to hold the serie
+- When connected
+	- every `samplePostMs` milliseconds the buffer is posted
+
+The app propose a link to an web app to monitor the events	
+
+### Status
 
 Preview version
 
 
-# Todo
+
+### Todo
 
 - include y
 - use already exisiting item

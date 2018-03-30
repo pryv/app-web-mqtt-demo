@@ -46,7 +46,7 @@ var pryvHF = {
 
   // --- Post logic
 
-  var samplePostMs = 1000;
+  var samplePostMs = 100;
 
 
   var sendCount = 0;
