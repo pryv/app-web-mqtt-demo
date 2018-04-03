@@ -178,7 +178,7 @@ function getSettingsFromURL() {
 
 function setupShareLink(connect) {
   var urlLabel = document.getElementById('sharelink');
-  urlLabel.innerHTML = ('<a target="_new" href="https://pryv.github.io/app-web-plotly/?pryv-reg=reg.preview.pryv.tech">FOLLOW ON PLOTLY APP</A>');
+  urlLabel.innerHTML = ('<a target="_new" href="https://pryv.github.io/app-web-plotly/?pryv-reg=reg.preview.pryv.tech&liverange=0.2">FOLLOW ON PLOTLY APP</A>');
 }
 
 document.onreadystatechange = function () {
