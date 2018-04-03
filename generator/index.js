@@ -1,4 +1,4 @@
-
+/*globals window, document, pryv */
 
 var pryvHF = {
   pryvConn: null, // global holder for the connection
@@ -7,6 +7,19 @@ var pryvHF = {
 
 /*globals document, pryv*/
 (function () {
+
+  window.addEventListener('deviceorientation', function (event) {
+
+    var now = Date.now() / 1000;
+    xLabel.innerHTML =  event.gamma;
+    yLabel.innerHTML =   event.beta;
+
+    xBuffer.push([now, event.gamma]);
+
+    counter += 2;
+  });
+
+
 
   var xLabel = document.getElementById('xLabel');
   var yLabel = document.getElementById('yLabel');
@@ -55,7 +68,7 @@ var pryvHF = {
     if (pryvHF.xEvent && xBuffer.length > 0) {
       var nBuffer = xBuffer;
       xBuffer = [];
-      postSerie(pryvHF.pryvConn, pryvHF.xEvent, nBuffer, function (err, res) {
+      postSerie(pryvHF.pryvConn, pryvHF.xEvent, nBuffer, function (/* err, res */) {
         sendCount += nBuffer.length;
         dataSentLabel.innerHTML = sendCount;
       });
@@ -79,13 +92,12 @@ function postSerie(connection, event, points, done) {
       fields: event.content.fields,
       points: points
     },
-    callback: done});
+    callback: done
+  });
 }
 
 
 function setupConnection(connection) {
-  console.log("Connection done!");
-
   // A- retrieve previously created events or create events holders
 
   var postData = [
@@ -102,7 +114,7 @@ function setupConnection(connection) {
   var resultTreatment = [
     function handleCreateEventX(result) {
       pryvHF.xEvent = result.event;
-      console.log("X handle set", pryvHF.xEvent);
+      console.log('X handle set', pryvHF.xEvent);
     }
   ];
 
@@ -130,16 +142,6 @@ function setupConnection(connection) {
 
 }
 
-// UTILS
-// Retrieve last events
-function getLastEvents() {
-  var filter = new pryv.Filter({limit : 20});
-  pryvHF.pryvConn.events.get(filter, function (err, events) {
-    // convert pryv.Event objects to plain data for display
-    display(events.map(function (e) { return e.getData(); }), $events);
-  });
-}
-
 
 
 
@@ -151,7 +153,8 @@ function getLastEvents() {
  * retrieve the registerURL from URL parameters
  */
 function getRegisterURL() {
-  return pryv.utility.urls.parseClientURL().parseQuery()['reg-pryv'] || pryv.utility.urls.parseClientURL().parseQuery()['pryv-reg'];
+  return pryv.utility.urls.parseClientURL().parseQuery()['reg-pryv'] ||
+    pryv.utility.urls.parseClientURL().parseQuery()['pryv-reg'];
 }
 
 var customRegisterUrl = getRegisterURL();
@@ -176,9 +179,11 @@ function getSettingsFromURL() {
   return null;
 }
 
-function setupShareLink(connect) {
+function setupShareLink(/* connect */) {
   var urlLabel = document.getElementById('sharelink');
-  urlLabel.innerHTML = ('<a target="_new" href="https://pryv.github.io/app-web-plotly/?pryv-reg=reg.preview.pryv.tech&liverange=0.2">FOLLOW ON PLOTLY APP</A>');
+  urlLabel.innerHTML = ('<a target="_new" ' +
+    'href="https://pryv.github.io/app-web-plotly/?pryv-reg=reg.preview.pryv.tech&liverange=0.2">' +
+    'FOLLOW ON PLOTLY APP</A>');
 }
 
 document.onreadystatechange = function () {
