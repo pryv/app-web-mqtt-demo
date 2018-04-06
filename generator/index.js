@@ -127,7 +127,7 @@ function postBatch(connection, measures, done) {
     if (! measures.hasOwnProperty(key)) { continue; }
 
 
-    console.log(key, measures[key].event, measures[key].buffer.length);
+    // console.log(key, measures[key].event, measures[key].buffer.length);
     if (measures[key].event && measures[key].buffer.length > 0) {
       var points = measures[key].buffer;
       sendCount += points.length;
@@ -194,6 +194,7 @@ function setupConnection(connection) {
   // A- retrieve previously created events or create events holders
 
   var postData = [
+    // MOUSE
     {
       method: 'streams.create',
       params: {
@@ -209,6 +210,14 @@ function setupConnection(connection) {
         update: { 
           clientData: stdPlotly('Mouse', 'count/generic', 'X')
         }
+      }
+    },
+    {
+      method: 'events.create',
+      params: {
+        streamId: 'hfdemo-mouse-x',
+        type: 'series:count/generic',
+        description: 'Holder for x mouse position'
       }
     },
     {
@@ -231,25 +240,60 @@ function setupConnection(connection) {
     {
       method: 'events.create',
       params: {
-        streamId: 'hfdemo-mouse-x',
-        type: 'series:count/generic',
-        description: 'Holder for x mouse position'
-      }
-    },
-    {
-      method: 'events.create',
-      params: {
         streamId: 'hfdemo-mouse-y',
         type: 'series:count/generic',
         description: 'Holder for y mouse position'
       }
     },
+    // DEVICE ORIENTATION
+    {
+      method: 'streams.create',
+      params: {
+        id: 'hfdemo-orientation-gamma',
+        name: 'Orientation-Gamma',
+        parentId: 'hfdemo'
+      }
+    },
+    {
+      method: 'streams.update',
+      params: {
+        id: 'hfdemo-orientation-gamma',
+        update: {
+          clientData: stdPlotly('Orientation', 'angle/deg', 'Gamma')
+        }
+      }
+    },
     {
       method: 'events.create',
       params: {
-        streamId: 'hfdemo',
+        streamId: 'hfdemo-orientation-gamma',
         type: 'series:angle/deg',
         description: 'Holder for device gamma'
+      }
+    },
+    {
+      method: 'streams.create',
+      params: {
+        id: 'hfdemo-orientation-beta',
+        name: 'Orientation-Beta',
+        parentId: 'hfdemo'
+      }
+    },
+    {
+      method: 'streams.update',
+      params: {
+        id: 'hfdemo-orientation-beta',
+        update: {
+          clientData: stdPlotly('Orientation', 'angle/deg', 'Beta')
+        }
+      }
+    },
+    {
+      method: 'events.create',
+      params: {
+        streamId: 'hfdemo-orientation-beta',
+        type: 'series:angle/deg',
+        description: 'Holder for device beta'
       }
     }
   ];
@@ -258,19 +302,27 @@ function setupConnection(connection) {
   var resultTreatment = [
     null,
     null,
-    null,
-    null,
     function handleCreateEventX(result) {
       pryvHF.measures.mouseX.event = result.event;
-      console.log('handle xEvent set', pryvHF.xEvent);
+      console.log('handle xEvent set', result.event);
     },
+    null,
+    null,
     function handleCreateEventY(result) {
       pryvHF.measures.mouseY.event = result.event;
-      console.log('handle yEvent set', pryvHF.yEvent);
+      console.log('handle yEvent set', result.event);
     },
+    null,
+    null,
     function handleCreateEventGamma(result) {
       pryvHF.measures.orientationGamma.event = result.event;
-      console.log('handle gammaEvent set', pryvHF.gammaEvent);
+      console.log('handle gammaEvent set', result.event);
+    },
+    null,
+    null,
+    function handleCreateEventBeta(result) {
+      pryvHF.measures.orientationBeta.event = result.event;
+      console.log('handle betaEvent set', result.event);
     }
   ];
 
