@@ -49,7 +49,8 @@ var pryvHF = {
   var samplingMs = 100;
 
   var counter = 0;
-  var previousTick = Date.now()
+  var previousTick = Date.now();
+  var sentCount = 0;
 
 
   document.onmousemove = function (event) {
@@ -78,26 +79,35 @@ var pryvHF = {
   var samplePostMs = 100;
 
 
-  var sendCount = 0;
-
   function samplePost() {
 
+
+    /**
     for (var key in pryvHF.measures) {
       // skip loop if the property is from prototype
       if (!pryvHF.measures.hasOwnProperty(key)) { continue; }
 
-    }
+
+      console.log(key, pryvHF.measures[key].event, pryvHF.measures[key].buffer.length);
+      if (pryvHF.measures[key].event && pryvHF.measures[key].buffer.length > 0) {
+        var nBuffer = pryvHF.measures[key].buffer;
+        pryvHF.measures[key].buffer = [];
+        postSerie(pryvHF.pryvConn, pryvHF.measures[key].event, nBuffer, function (err, res ) {
+          sentCount += nBuffer.length;
+          dataSentLabel.innerHTML = sendCount;
+        });
+      }
+    } **/
 
 
-    console.log(pryvHF.measures.mouseX.event, pryvHF.measures.mouseX.buffer.length);
-    if (pryvHF.measures.mouseX.event && pryvHF.measures.mouseX.buffer.length > 0) {
-      var nBuffer = pryvHF.measures.mouseX.buffer;
-      pryvHF.measures.mouseX.buffer = [];
-        postSerie(pryvHF.pryvConn, pryvHF.measures.mouseX.event, nBuffer, function (/* err, res */) {
-        sendCount += nBuffer.length;
-        dataSentLabel.innerHTML = sendCount;
+    if (pryvHF.pryvConn) {
+      postBatch(pryvHF.pryvConn, pryvHF.measures, function (err, res, count) {
+        sentCount += count;
+        dataSentLabel.innerHTML = sentCount;
       });
     }
+
+
     setTimeout(samplePost, samplePostMs);
 
   }
@@ -107,7 +117,34 @@ var pryvHF = {
 })();
 
 
-function postBatch(connection, event, points, done) {
+function postBatch(connection, measures, done) {
+
+  var data = [];
+  var sendCount = 0;
+
+  for (var key in measures) {
+    // skip loop if the property is from prototype
+    if (! measures.hasOwnProperty(key)) { continue; }
+
+
+    console.log(key, measures[key].event, measures[key].buffer.length);
+    if (measures[key].event && measures[key].buffer.length > 0) {
+      var points = measures[key].buffer;
+      sendCount += points.length;
+      measures[key].buffer = [];
+      data.push({
+        eventId: measures[key].event.id,
+        data: {
+          format: 'flatJSON',
+          fields: measures[key].event.content.fields,
+          points: points
+        }
+      });
+
+    }
+  }
+
+  if (sendCount === 0) { return done(null, null, 0);}
 
   connection.request({
     withoutCredentials: true,
@@ -115,18 +152,9 @@ function postBatch(connection, event, points, done) {
     path: '/series/batch',
     jsonData: {
       format: 'seriesBatch',
-      data: [
-        {
-          eventId: event.id,
-          data: {
-            format: 'flatJSON',
-            fields: event.content.fields,
-            points: points
-          }
-        }
-      ]
+      data: data
     },
-    callback: done
+    callback: function (err, res) { done(err, res, sendCount); }
   });
 }
 
@@ -146,6 +174,22 @@ function postSerie(connection, event, points, done) {
 }
 
 
+function stdPlotly(key, type, name) {
+  var data = {};
+  data[type] = {
+     plotKey: key,
+      trace: {
+        type: 'scatter',
+        name: name,
+        mode: 'lines',
+        connectgaps: 0
+      }
+
+  }
+
+  return { 'app-web-plotly' : data };
+}
+
 function setupConnection(connection) {
   // A- retrieve previously created events or create events holders
 
@@ -159,6 +203,15 @@ function setupConnection(connection) {
       }
     },
     {
+      method: 'streams.update',
+      params: {
+        id: 'hfdemo-mouse-x',
+        update: { 
+          clientData: stdPlotly('Mouse', 'count/generic', 'X')
+        }
+      }
+    },
+    {
       method: 'streams.create',
       params: {
         id: 'hfdemo-mouse-y',
@@ -167,11 +220,28 @@ function setupConnection(connection) {
       }
     },
     {
+      method: 'streams.update',
+      params: {
+        id: 'hfdemo-mouse-y',
+        update: { 
+          clientData: stdPlotly('Mouse', 'count/generic', 'Y')
+        }
+      }
+    },
+    {
       method: 'events.create',
       params: {
         streamId: 'hfdemo-mouse-x',
         type: 'series:count/generic',
         description: 'Holder for x mouse position'
+      }
+    },
+    {
+      method: 'events.create',
+      params: {
+        streamId: 'hfdemo-mouse-y',
+        type: 'series:count/generic',
+        description: 'Holder for y mouse position'
       }
     },
     {
@@ -188,9 +258,15 @@ function setupConnection(connection) {
   var resultTreatment = [
     null,
     null,
+    null,
+    null,
     function handleCreateEventX(result) {
       pryvHF.measures.mouseX.event = result.event;
       console.log('handle xEvent set', pryvHF.xEvent);
+    },
+    function handleCreateEventY(result) {
+      pryvHF.measures.mouseY.event = result.event;
+      console.log('handle yEvent set', pryvHF.yEvent);
     },
     function handleCreateEventGamma(result) {
       pryvHF.measures.orientationGamma.event = result.event;
