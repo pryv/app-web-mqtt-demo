@@ -2,7 +2,25 @@
 
 var pryvHF = {
   pryvConn: null, // global holder for the connection
-  xEvent: null // HF event serie for x data
+  measures: {
+    mouseX: {
+      event: null,
+      buffer: []
+    },
+    mouseY: {
+      event: null,
+      buffer: []
+    },
+    orientationGamma: {
+      event: null,
+      buffer: []
+    },
+    orientationBeta: {
+      event: null,
+      buffer: []
+    }
+  }
+
 };
 
 /*globals document, pryv*/
@@ -14,7 +32,8 @@ var pryvHF = {
     xLabel.innerHTML =  event.gamma;
     yLabel.innerHTML =   event.beta;
 
-    xBuffer.push([now, event.gamma]);
+    pryvHF.measures.orientationGamma.buffer.push([now, event.gamma]);
+    pryvHF.measures.orientationBeta.buffer.push([now, event.beta]);
 
     counter += 2;
   });
@@ -30,10 +49,7 @@ var pryvHF = {
   var samplingMs = 100;
 
   var counter = 0;
-  var previousTick = Date.now();
-
-
-  var xBuffer = []; // holds data to be posted
+  var previousTick = Date.now()
 
 
   document.onmousemove = function (event) {
@@ -41,15 +57,15 @@ var pryvHF = {
     xLabel.innerHTML =  event.pageX;
     yLabel.innerHTML =  event.pageY;
 
-    xBuffer.push([now, event.pageX]);
-
+    pryvHF.measures.mouseX.buffer.push([now, event.pageX]);
+    pryvHF.measures.mouseY.buffer.push([now, event.pageY]);
     counter += 2;
   };
 
   function sampleHz() {
     var now = Date.now();
     frequencyLabel.innerHTML = Math.round(counter * 1000 /  (now - previousTick));
-    dataBufferLabel.innerHTML = xBuffer.length;
+    dataBufferLabel.innerHTML = 0; // xBuffer.length;
     counter = 0;
     previousTick = now;
     setTimeout(sampleHz, samplingMs);
@@ -65,10 +81,19 @@ var pryvHF = {
   var sendCount = 0;
 
   function samplePost() {
-    if (pryvHF.xEvent && xBuffer.length > 0) {
-      var nBuffer = xBuffer;
-      xBuffer = [];
-      postSerie(pryvHF.pryvConn, pryvHF.xEvent, nBuffer, function (/* err, res */) {
+
+    for (var key in pryvHF.measures) {
+      // skip loop if the property is from prototype
+      if (!pryvHF.measures.hasOwnProperty(key)) { continue; }
+
+    }
+
+
+    console.log(pryvHF.measures.mouseX.event, pryvHF.measures.mouseX.buffer.length);
+    if (pryvHF.measures.mouseX.event && pryvHF.measures.mouseX.buffer.length > 0) {
+      var nBuffer = pryvHF.measures.mouseX.buffer;
+      pryvHF.measures.mouseX.buffer = [];
+        postSerie(pryvHF.pryvConn, pryvHF.measures.mouseX.event, nBuffer, function (/* err, res */) {
         sendCount += nBuffer.length;
         dataSentLabel.innerHTML = sendCount;
       });
@@ -80,6 +105,30 @@ var pryvHF = {
   samplePost();
 
 })();
+
+
+function postBatch(connection, event, points, done) {
+
+  connection.request({
+    withoutCredentials: true,
+    method: 'POST',
+    path: '/series/batch',
+    jsonData: {
+      format: 'seriesBatch',
+      data: [
+        {
+          eventId: event.id,
+          data: {
+            format: 'flatJSON',
+            fields: event.content.fields,
+            points: points
+          }
+        }
+      ]
+    },
+    callback: done
+  });
+}
 
 
 function postSerie(connection, event, points, done) {
@@ -102,19 +151,50 @@ function setupConnection(connection) {
 
   var postData = [
     {
+      method: 'streams.create',
+      params: {
+        id: 'hfdemo-mouse-x',
+        name: 'Mouse-X',
+        parentId: 'hfdemo'
+      }
+    },
+    {
+      method: 'streams.create',
+      params: {
+        id: 'hfdemo-mouse-y',
+        name: 'Mouse-Y',
+        parentId: 'hfdemo'
+      }
+    },
+    {
+      method: 'events.create',
+      params: {
+        streamId: 'hfdemo-mouse-x',
+        type: 'series:count/generic',
+        description: 'Holder for x mouse position'
+      }
+    },
+    {
       method: 'events.create',
       params: {
         streamId: 'hfdemo',
-        type: 'series:count/generic',
-        description: 'Holder for x mouse position'
+        type: 'series:angle/deg',
+        description: 'Holder for device gamma'
       }
     }
   ];
 
+
   var resultTreatment = [
+    null,
+    null,
     function handleCreateEventX(result) {
-      pryvHF.xEvent = result.event;
-      console.log('X handle set', pryvHF.xEvent);
+      pryvHF.measures.mouseX.event = result.event;
+      console.log('handle xEvent set', pryvHF.xEvent);
+    },
+    function handleCreateEventGamma(result) {
+      pryvHF.measures.orientationGamma.event = result.event;
+      console.log('handle gammaEvent set', pryvHF.gammaEvent);
     }
   ];
 
@@ -128,7 +208,9 @@ function setupConnection(connection) {
       console.log('...event created: ' + JSON.stringify(result));
       if (result && result.results) {
         for (var i = 0; i < result.results.length; i++) {
-          resultTreatment[i].call(null, result.results[i]);
+          if (resultTreatment[i]) {
+            resultTreatment[i].call(null, result.results[i]);
+          }
         }
       } else {
         console.log(' No result!!', resultInfo);
