@@ -4,6 +4,11 @@
 Test it online on github [/generator/index.html?pryv-reg=reg.preview.pryv.tech](https://perki.github.io/pryv-app-web-hfdemo/generator/index.html?pryv-reg=reg.preview.pryv.tech)
 
 
+Simple Random generator:  [generator/simplegen.html?pryv-reg=reg.preview.pryv.tech](https://perki.github.io/pryv-app-web-hfdemo/generator/simplegen.html?pryv-reg=reg.preview.pryv.tech)
+
+Simple reader (to be used with simple generator):  [generator/reader.html?pryv-reg=reg.preview.pryv.tech](https://perki.github.io/pryv-app-web-hfdemo/generator/reader.html?pryv-reg=reg.preview.pryv.tech)
+
+
 This web app will track your mouse and post it as a *series:xx/xx* event
 
 ### Implementation

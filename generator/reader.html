@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pryv Simple Reader</title>
+</head>
+<body>
+
+<div class="container">
+  <div class="topBar">
+    <div class="titleContainer">
+      <div class="pryvLogo">
+        <a href="http://api.pryv.com/" target="_blank">
+          <img src="img/loader.gif" id="loading"><img>
+          <img src="img/logo-pryv.png" id="logo-pryv"><img>
+        </a>
+      </div>
+      <div class="title">
+        <h3>Pryv Simple Reader</h3>
+      </div>
+    </div>
+    <div class="buttonContainer">
+      <span id="pryv-button"></span>
+    </div>
+  </div>
+  <div class="subContainer">
+    <div class="valueContainer">
+      Frequency: <span id="frequencyLabel"></span> measures/second  (Hz)
+    </div>
+    <div class="valueContainer">
+      Measures received: <span id="rLabel"></span>
+    </div>
+  </div>
+  <div class="sharingcontainer">
+    <div class="sharinglink">
+      <label id="sharelink">
+        -
+      </label>
+    </div>
+    <div class="shareqr">
+      <label>
+        -
+      </label>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+</body>
+<script src="pryv.js"></script>
+<script src="reader.js"></script>
+<link href="style.css" rel="stylesheet" type="text/css"/>
+
+</html>
