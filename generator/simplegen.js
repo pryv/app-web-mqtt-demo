@@ -192,7 +192,7 @@ function getSettingsFromURL() {
 function setupShareLink(connect) {
   var urlLabel = document.getElementById('sharelink');
   urlLabel.innerHTML = ('<a target="_new" ' +
-    'href="reader.html?pryv-reg=reg.preview.pryv.tech">' +
+    'href="reader.html?pryv-reg=reg.pryv.me">' +
     'FOLLOW ON READER</A>');
 }
 
