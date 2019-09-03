@@ -418,7 +418,7 @@ function getSettingsFromURL() {
 function setupShareLink(/* connect */) {
   var urlLabel = document.getElementById('sharelink');
   urlLabel.innerHTML = ('<a target="_new" ' +
-    'href="https://pryv.github.io/app-web-plotly/?pryv-reg=reg.pryv.meh&liverange=0.2">' +
+    'href="https://pryv.github.io/app-web-plotly/?pryv-reg=reg.pryv.me&liverange=0.2">' +
     'FOLLOW ON PLOTLY APP</A>');
 }
 
