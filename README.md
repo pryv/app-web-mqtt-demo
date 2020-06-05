@@ -1,12 +1,11 @@
 # Demo of High Frequency usage on Pryv
 
 
-Test it online on github [/generator/index.html?pryv-reg=reg.pryv.me](https://perki.github.io/pryv-app-web-hfdemo/generator/index.html?pryv-reg=reg.pryv.me)
+Test it online on github [/generator/index.html?pryv-reg=reg.pryv.me](https://pryv.github.io/app-web-mqtt-demo/generator/index.html?pryv-reg=reg.pryv.me)
 
+Simple Random generator:  [generator/simplegen.html?pryv-reg=reg.pryv.me](https://pryv.github.io/app-web-mqtt-demo/generator/simplegen.html?pryv-reg=reg.pryv.me)
 
-Simple Random generator:  [generator/simplegen.html?pryv-reg=reg.pryv.me](https://perki.github.io/pryv-app-web-hfdemo/generator/simplegen.html?pryv-reg=reg.pryv.me)
-
-Simple reader (to be used with simple generator):  [generator/reader.html?pryv-reg=reg.pryv.me](https://perki.github.io/pryv-app-web-hfdemo/generator/reader.html?pryv-reg=reg.pryv.me)
+Simple reader (to be used with simple generator):  [generator/reader.html?pryv-reg=reg.pryv.me](https://pryv.github.io/app-web-mqtt-demo/reader.html?pryv-reg=reg.pryv.me)
 
 
 This web app will track your mouse and post it as a *series:xx/xx* event
