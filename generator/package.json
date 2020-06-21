@@ -1,0 +1,20 @@
+{
+  "name": "generator",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "browser-resolve": "^1.11.3",
+    "mqtt": "^4.1.0",
+    "mqtt_client": "file:../../mqtt_client"
+  },
+  "devDependencies": {
+    "esmify": "^2.1.1"
+  },
+  "scripts": {
+    "build": "browserify request.js --standalone -o request_bundle.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}

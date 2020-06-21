@@ -831,9 +831,6 @@ var objectKeys = Object.keys || function (obj) {
 },{}],7:[function(require,module,exports){
 'use strict';
 
-exports.decode = exports.parse = require('./decode');
-exports.encode = exports.stringify = require('./encode');
-
 },{"./decode":5,"./encode":6}],8:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -7577,6 +7574,8 @@ var utility = require('./utility/utility.js'),
     Datastore = require('./Datastore.js'),
     _ = require('underscore');
 
+// Export utility
+module.exports.utility = utility;
 /**
  * @class Connection
  * Create an instance of Connection to Pryv API.

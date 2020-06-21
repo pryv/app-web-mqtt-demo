@@ -1,4 +1,5 @@
 /*globals window, document, pryv */
+console.log(token);
 
 var pryvHF = {
   pryvConn: null, // global holder for the connection
@@ -86,7 +87,7 @@ var pryvHF = {
 
   // --- Post logic
 
-  var samplePostMs = 100;
+  var samplePostMs = 1000;
 
 
   function samplePost() {
@@ -109,29 +110,52 @@ var pryvHF = {
       }
     } **/
 
-
     if (pryvHF.pryvConn) {
-      postBatch(pryvHF.pryvConn, pryvHF.measures, function (err, res, count) {
-        sentCount += count;
-        dataSentLabel.innerHTML = sentCount;
-      });
+      console.log(`we are here`);
+      console.log(pryvHF.pryvConn);
+      // Construct apiEndpoint
+      let username = pryvHF.pryvConn.username;
+      let auth = pryvHF.pryvConn.auth;
+      let apiEndPoint = `https://${auth}@${username}.pryv.me`;
+      
+      // Login mqtt client
+      if (!mqttLoggedIn) {
+        var loggedIn = mqttClient.login(apiEndPoint);
+        loggedIn.then( (code) => {
+            if (code == 0) {
+              mqttLoggedIn = true;
+            } else {
+              console.log("Fail to log in");
+            }
+        })             
+      }
+      console.log(apiEndPoint);
+
+      if (mqttLoggedIn) {
+        postBatch(mqttClient, pryvHF.measures, function (err, res, count) {
+          sentCount += count;
+          dataSentLabel.innerHTML = sentCount;
+        });
+      }
+      console.log(`client id ${mqttClient.clientId}`);
+     
     }
-
-
     setTimeout(samplePost, samplePostMs);
-
   }
 
+  // Keep-alive mqtt client
+  var mqttClient = new MQTTClient(brokerAddr);
+  var mqttLoggedIn = false;
   samplePost();
 
 })();
 
 
-function postBatch(connection, measures, done) {
+function postBatch(mqttClient, measures, done) {
 
   var data = [];
   var sendCount = 0;
-
+  // Generate points to push
   for (var key in measures) {
     // skip loop if the property is from prototype
     if (!measures.hasOwnProperty(key)) { continue; }
@@ -142,30 +166,34 @@ function postBatch(connection, measures, done) {
       var points = measures[key].buffer;
       sendCount += points.length;
       measures[key].buffer = [];
-      data.push({
+      packet = {
         eventId: measures[key].event.id,
         data: {
           format: 'flatJSON',
           fields: measures[key].event.content.fields,
           points: points
         }
-      });
-
+      };
+      console.log("Bye world");
+      console.log(packet);
+      mqttClient.createPoints(packet);
+      data.push(packet);
     }
   }
 
   if (sendCount === 0) { return done(null, null, 0); }
 
-  connection.request({
-    withoutCredentials: true,
-    method: 'POST',
-    path: '/series/batch',
-    jsonData: {
-      format: 'seriesBatch',
-      data: data
-    },
-    callback: function (err, res) { done(err, res, sendCount); }
-  });
+  // connection.request({
+  //   withoutCredentials: true,
+  //   method: 'POST',
+  //   path: '/series/batch',
+  //   jsonData: {
+  //     format: 'seriesBatch',
+  //     data: data
+  //   },
+  //   callback: function (err, res) { done(err, res, sendCount); }
+  // });
+  done(null, null, sendCount);
 }
 
 
@@ -425,7 +453,7 @@ document.onreadystatechange = function () {
         setupConnection(connection);
       });
     } else {
-
+      
       // Authenticate user
       var authSettings = {
         requestingAppId: 'app-web-hfdemo',
