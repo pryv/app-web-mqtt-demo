@@ -87,8 +87,7 @@ var pryvHF = {
 
   // --- Post logic
 
-  var samplePostMs = 1000;
-
+  var samplePostMs = 100;
 
   function samplePost() {
 
@@ -111,8 +110,7 @@ var pryvHF = {
     } **/
 
     if (pryvHF.pryvConn) {
-      console.log(`we are here`);
-      console.log(pryvHF.pryvConn);
+
       // Construct apiEndpoint
       let username = pryvHF.pryvConn.username;
       let auth = pryvHF.pryvConn.auth;
@@ -123,24 +121,35 @@ var pryvHF = {
         var loggedIn = mqttClient.login(apiEndPoint);
         loggedIn.then( (code) => {
             if (code == 0) {
+
+              // Set loggedin to true
               mqttLoggedIn = true;
+
+              // Trigger first batch posting
+              postBatch(mqttClient, pryvHF.measures, function (err, res, count) {
+                sentCount += count;
+                dataSentLabel.innerHTML = sentCount;
+              });
             } else {
               console.log("Fail to log in");
             }
-        })             
-      }
-      console.log(apiEndPoint);
 
-      if (mqttLoggedIn) {
+            setTimeout(samplePost, samplePostMs);
+        })             
+      } else {
+
+        // Trigger batch posting after loggedin set to true
         postBatch(mqttClient, pryvHF.measures, function (err, res, count) {
           sentCount += count;
           dataSentLabel.innerHTML = sentCount;
         });
+        setTimeout(samplePost, samplePostMs);
       }
       console.log(`client id ${mqttClient.clientId}`);
      
+    } else {
+      setTimeout(samplePost, samplePostMs);
     }
-    setTimeout(samplePost, samplePostMs);
   }
 
   // Keep-alive mqtt client
@@ -366,11 +375,6 @@ function setupConnection(connection) {
   ];
 
 
-
-
-
-
-
   connection.request({
     method: 'POST',
     path: '/',
@@ -445,6 +449,7 @@ document.onreadystatechange = function () {
   document.getElementById('loading').style.display = 'none';
   document.getElementById('logo-pryv').style.display = 'block';
   var state = document.readyState;
+
   if (state === 'complete') {
     var settings = getSettingsFromURL();
     if (settings) {
@@ -464,8 +469,14 @@ document.onreadystatechange = function () {
             level: 'manage'
           }
         ],
+        // onStateChange: pryvAuthStateChange,
         returnURL: false,
         spanButtonID: 'pryv-button',
+        // clientData: {
+        //   'app-web-auth:description': {
+        //     'type': 'note/txt', 'content': 'This is a consent message.'
+        //   }
+        // }
         callbacks: {
           needSignin: null,
           needValidation: null,
@@ -477,6 +488,22 @@ document.onreadystatechange = function () {
           }
         }
       };
+    //   function pryvAuthStateChange(state) { // called each time the authentication state changed
+    //     console.log('##pryvAuthStateChange', state);
+    //     if (state.id === Pryv.Browser.AuthStates.AUTHORIZED) {
+    //       connection = new Pryv.Connection(state.apiEndpoint);
+    //       logToConsole('# Browser succeeded for user ' + connection.apiEndpoint);
+    //     }
+    //     if (state.id === Pryv.Browser.AuthStates.LOGOUT) {
+    //       connection = null;
+    //       logToConsole('# Logout');
+    //     }
+    //  } 
+    //  var serviceInfoUrl = 'https://api.pryv.com/lib-js/demos/service-info.json';
+    //  (async function () {
+    //    console.log("check point");
+    //    var service = await Pryv.Browser.setupAuth(authSettings, serviceInfoUrl);
+    //  })();
       pryv.Auth.setup(authSettings);
     }
   }
