@@ -6,7 +6,8 @@
   "dependencies": {
     "browser-resolve": "^1.11.3",
     "mqtt": "^4.1.0",
-    "mqtt_client": "git+ssh://git@github.com:pryv/client-mqtt.git"
+    "mqtt_client": "git+ssh://git@github.com:pryv/client-mqtt.git",
+    "pryv": "^2.0.5"
   },
   "devDependencies": {
     "esmify": "^2.1.1"

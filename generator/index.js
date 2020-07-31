@@ -28,9 +28,6 @@ var pryvHF = {
 /*globals document, pryv*/
 (function () {
 
-
-
-
   var xLabel = document.getElementById('xLabel');
   var yLabel = document.getElementById('yLabel');
   var gLabel = document.getElementById('gLabel');
@@ -58,7 +55,6 @@ var pryvHF = {
 
     counter += 2;
   });
-
 
 
   document.onmousemove = function (event) {
@@ -91,33 +87,18 @@ var pryvHF = {
 
   function samplePost() {
 
-
-    /**
-    for (var key in pryvHF.measures) {
-      // skip loop if the property is from prototype
-      if (!pryvHF.measures.hasOwnProperty(key)) { continue; }
-
-
-      console.log(key, pryvHF.measures[key].event, pryvHF.measures[key].buffer.length);
-      if (pryvHF.measures[key].event && pryvHF.measures[key].buffer.length > 0) {
-        var nBuffer = pryvHF.measures[key].buffer;
-        pryvHF.measures[key].buffer = [];
-        postSerie(pryvHF.pryvConn, pryvHF.measures[key].event, nBuffer, function (err, res ) {
-          sentCount += nBuffer.length;
-          dataSentLabel.innerHTML = sendCount;
-        });
-      }
-    } **/
-
     if (pryvHF.pryvConn) {
 
       // Construct apiEndpoint
-      let username = pryvHF.pryvConn.username;
-      let auth = pryvHF.pryvConn.auth;
-      let apiEndPoint = `https://${auth}@${username}.pryv.me`;
-      
+      console.log(pryvHF.pryvConn);
+      let suffix = pryvHF.pryvConn.endpoint.split("://")[1];
+      let username = suffix.split(".")[0];
+      let token = pryvHF.pryvConn.token;
+      let apiEndPoint = `https://${token}@${suffix}`;
+
       // Login mqtt client
       if (!mqttLoggedIn) {
+        mqttClient = new MQTTClient(brokerAddr, username); 
         var loggedIn = mqttClient.login(apiEndPoint);
         loggedIn.then( (code) => {
             if (code == 0) {
@@ -153,7 +134,7 @@ var pryvHF = {
   }
 
   // Keep-alive mqtt client
-  var mqttClient = new MQTTClient(brokerAddr);
+  var mqttClient = null;
   var mqttLoggedIn = false;
   samplePost();
 
@@ -166,12 +147,12 @@ function postBatch(mqttClient, measures, done) {
   var sendCount = 0;
   // Generate points to push
   for (var key in measures) {
+
     // skip loop if the property is from prototype
     if (!measures.hasOwnProperty(key)) { continue; }
 
-
-    // console.log(key, measures[key].event, measures[key].buffer.length);
     if (measures[key].event && measures[key].buffer.length > 0) {
+      
       var points = measures[key].buffer;
       sendCount += points.length;
       measures[key].buffer = [];
@@ -192,16 +173,6 @@ function postBatch(mqttClient, measures, done) {
 
   if (sendCount === 0) { return done(null, null, 0); }
 
-  // connection.request({
-  //   withoutCredentials: true,
-  //   method: 'POST',
-  //   path: '/series/batch',
-  //   jsonData: {
-  //     format: 'seriesBatch',
-  //     data: data
-  //   },
-  //   callback: function (err, res) { done(err, res, sendCount); }
-  // });
   done(null, null, sendCount);
 }
 
@@ -237,7 +208,7 @@ function stdPlotly(key, type, name) {
   return { 'app-web-plotly': data };
 }
 
-function setupConnection(connection) {
+async function setupConnection(connection) {
   // A- retrieve previously created events or create events holders
 
   var postData;
@@ -375,29 +346,42 @@ function setupConnection(connection) {
   ];
 
 
-  connection.request({
-    method: 'POST',
-    path: '/',
-    jsonData: postData,
-    callback: function (err, result, resultInfo) {
-      if (err) { return console.log('...error: ' + JSON.stringify([err, result])); }
-      console.log('...event created: ' + JSON.stringify(result));
-      if (result && result.results) {
-        for (var i = 0; i < result.results.length; i++) {
-          if (resultTreatment[i]) {
-            resultTreatment[i].call(null, result.results[i]);
-          }
+  try {
+    const results = await connection.api(postData);
+    if (results) {
+      for (var i = 0; i < results.length; i++) {
+        if (resultTreatment[i]) {
+          resultTreatment[i].call(null, results[i]);
         }
-      } else {
-        console.log(' No result!!', resultInfo);
       }
-
+    } else {
+      console.log(' No result!!', resultInfo);
     }
-  });
+  } catch (e) {
+    console.log(e);
+  }
+  // connection.request({
+  //   method: 'POST',
+  //   path: '/',
+  //   jsonData: postData,
+  //   callback: function (err, result, resultInfo) {
+  //     if (err) { return console.log('...error: ' + JSON.stringify([err, result])); }
+  //     console.log('...event created: ' + JSON.stringify(result));
+  //     if (result && result.results) {
+  //       for (var i = 0; i < result.results.length; i++) {
+  //         if (resultTreatment[i]) {
+  //           resultTreatment[i].call(null, result.results[i]);
+  //         }
+  //       }
+  //     } else {
+  //       console.log(' No result!!', resultInfo);
+  //     }
+
+  //   }
+  // });
 
 
   pryvHF.pryvConn = connection;
-
 }
 
 
@@ -443,7 +427,6 @@ function setupShareLink(/* connect */) {
     'href="https://pryv.github.io/app-web-plotly/?pryv-reg=reg.pryv.me&liverange=0.2">' +
     'FOLLOW ON PLOTLY APP</A>');
 }
-
 document.onreadystatechange = function () {
 
   document.getElementById('loading').style.display = 'none';
@@ -459,52 +442,47 @@ document.onreadystatechange = function () {
       });
     } else {
       
-      // Authenticate user
       var authSettings = {
-        requestingAppId: 'app-web-hfdemo',
-        requestedPermissions: [
-          {
-            streamId: 'hfdemo',
-            defaultName: 'Demo HF',
-            level: 'manage'
-          }
-        ],
-        // onStateChange: pryvAuthStateChange,
-        returnURL: false,
-        spanButtonID: 'pryv-button',
-        // clientData: {
-        //   'app-web-auth:description': {
-        //     'type': 'note/txt', 'content': 'This is a consent message.'
-        //   }
-        // }
-        callbacks: {
-          needSignin: null,
-          needValidation: null,
-          signedIn: function (connect) {
-            setupShareLink(connect);
-            connect.fetchStructure(function () {
-              setupConnection(connect);
-            });
-          }
+        spanButtonID: 'pryv-button', // span id the DOM that will be replaced by the Service specific button
+        onStateChange: pryvAuthStateChange, // event Listener for Authentication steps
+        authRequest: { // See: https://api.pryv.com/reference/#auth-request
+          requestingAppId: 'app-web-hfdemo',
+          languageCode: 'fr', // optional (default english)
+          requestedPermissions: [
+            {
+              streamId: 'hfdemo',
+              defaultName: 'Demo HF',
+              level: 'manage'
+            }
+          ],
+          clientData: {
+            'app-web-auth:description': {
+              'type': 'note/txt', 'content': 'This is a consent message.'
+            }
+          },
         }
       };
-    //   function pryvAuthStateChange(state) { // called each time the authentication state changed
-    //     console.log('##pryvAuthStateChange', state);
-    //     if (state.id === Pryv.Browser.AuthStates.AUTHORIZED) {
-    //       connection = new Pryv.Connection(state.apiEndpoint);
-    //       logToConsole('# Browser succeeded for user ' + connection.apiEndpoint);
-    //     }
-    //     if (state.id === Pryv.Browser.AuthStates.LOGOUT) {
-    //       connection = null;
-    //       logToConsole('# Logout');
-    //     }
-    //  } 
-    //  var serviceInfoUrl = 'https://api.pryv.com/lib-js/demos/service-info.json';
-    //  (async function () {
-    //    console.log("check point");
-    //    var service = await Pryv.Browser.setupAuth(authSettings, serviceInfoUrl);
-    //  })();
-      pryv.Auth.setup(authSettings);
+      
+      function pryvAuthStateChange(state) { // called each time the authentication state changed
+        console.log('##pryvAuthStateChange', state);
+        if (state.id === Pryv.Browser.AuthStates.AUTHORIZED) {
+          connection = new Pryv.Connection(state.apiEndpoint);
+          console.log(connection);
+          setupShareLink();
+          setupConnection(connection);
+        }
+        if (state.id === Pryv.Browser.AuthStates.LOGOUT) {
+          connection = null;
+          logToConsole('# Logout');
+        }
+      }
+      
+      var serviceInfoUrl = "https://reg.pryv.me/service/info";
+      (async function () {
+        var service = await Pryv.Browser.setupAuth(authSettings, serviceInfoUrl);
+      })();
+
+      // pryv.Auth.setup(authSettings);
     }
   }
 };
