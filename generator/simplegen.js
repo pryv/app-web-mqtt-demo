@@ -33,68 +33,103 @@ var pryvHF = {
 
   // Loop to Post HF data
   var samplePostMs = 100;
+ 
   function samplePost() {
+
     if (pryvHF.pryvConn) {
-      postBatch(pryvHF.pryvConn, pryvHF.measures, function (err, res, count) {
-        sentCount += count;
-        dataSentLabel.innerHTML = sentCount;
-      });
+
+      // Construct apiEndpoint
+      console.log(pryvHF.pryvConn);
+      let suffix = pryvHF.pryvConn.endpoint.split("://")[1];
+      let username = suffix.split(".")[0];
+      let token = pryvHF.pryvConn.token;
+      let apiEndPoint = `https://${token}@${suffix}`;
+
+      // Login mqtt client
+      if (!mqttLoggedIn) {
+        mqttClient = new MQTTClient(brokerAddr, username); 
+        var loggedIn = mqttClient.login(apiEndPoint);
+        loggedIn.then( (code) => {
+            if (code == 0) {
+
+              // Set loggedin to true
+              mqttLoggedIn = true;
+
+              // Trigger first batch posting
+              postBatch(mqttClient, pryvHF.measures, function (err, res, count) {
+                sentCount += count;
+                dataSentLabel.innerHTML = sentCount;
+              });
+            } else {
+              console.log("Fail to log in");
+            }
+
+            setTimeout(samplePost, samplePostMs);
+        })             
+      } else {
+
+        // Trigger batch posting after loggedin set to true
+        postBatch(mqttClient, pryvHF.measures, function (err, res, count) {
+          sentCount += count;
+          dataSentLabel.innerHTML = sentCount;
+        });
+        setTimeout(samplePost, samplePostMs);
+      }
+      console.log(`client id ${mqttClient.clientId}`);
+     
+    } else {
+      setTimeout(samplePost, samplePostMs);
     }
-    setTimeout(samplePost, samplePostMs);
   }
 
+  // Keep-alive mqtt client
+  var mqttClient = null;
+  var mqttLoggedIn = false;
   samplePost();
 
 })();
 
 
-// Create JSON and Push to API
-function postBatch(connection, measures, done) {
+
+
+function postBatch(mqttClient, measures, done) {
 
   var data = [];
   var sendCount = 0;
-
+  // Generate points to push
   for (var key in measures) {
+
     // skip loop if the property is from prototype
-    if (! measures.hasOwnProperty(key)) { continue; }
+    if (!measures.hasOwnProperty(key)) { continue; }
 
-
-    // console.log(key, measures[key].event, measures[key].buffer.length);
     if (measures[key].event && measures[key].buffer.length > 0) {
+      
       var points = measures[key].buffer;
       sendCount += points.length;
       measures[key].buffer = [];
-      data.push({
+      packet = {
         eventId: measures[key].event.id,
         data: {
           format: 'flatJSON',
           fields: measures[key].event.content.fields,
           points: points
         }
-      });
-
+      };
+      console.log("Bye world");
+      console.log(packet);
+      mqttClient.createPoints(packet);
+      data.push(packet);
     }
   }
 
-  if (sendCount === 0) { return done(null, null, 0);}
+  if (sendCount === 0) { return done(null, null, 0); }
 
-  connection.request({
-    withoutCredentials: true,
-    method: 'POST',
-    path: '/series/batch',
-    jsonData: {
-      format: 'seriesBatch',
-      data: data
-    },
-    callback: function (err, res) { done(err, res, sendCount); }
-  });
+  done(null, null, sendCount);
 }
 
 
-
-
 // initialize the account and create a handler for the measure
-function setupConnection(connection) {
+async function setupConnection(connection) {
   // A- retrieve previously created events or create events holders
 
 
@@ -126,26 +161,40 @@ function setupConnection(connection) {
     ];
 
 
-
-  connection.request({
-    method: 'POST',
-    path: '/',
-    jsonData: postData,
-    callback: function (err, result, resultInfo) {
-      if (err) { return console.log('...error: ' + JSON.stringify([err, result])); }
-      console.log('...event created: ' + JSON.stringify(result));
-      if (result && result.results) {
-        for (var i = 0; i < result.results.length; i++) {
+    try {
+      const results = await connection.api(postData);
+      if (results) {
+        for (var i = 0; i < results.length; i++) {
           if (resultTreatment[i]) {
-            resultTreatment[i].call(null, result.results[i]);
+            resultTreatment[i].call(null, results[i]);
           }
         }
       } else {
         console.log(' No result!!', resultInfo);
       }
-
+    } catch (e) {
+      console.log(e);
     }
-  });
+
+  // connection.request({
+  //   method: 'POST',
+  //   path: '/',
+  //   jsonData: postData,
+  //   callback: function (err, result, resultInfo) {
+  //     if (err) { return console.log('...error: ' + JSON.stringify([err, result])); }
+  //     console.log('...event created: ' + JSON.stringify(result));
+  //     if (result && result.results) {
+  //       for (var i = 0; i < result.results.length; i++) {
+  //         if (resultTreatment[i]) {
+  //           resultTreatment[i].call(null, result.results[i]);
+  //         }
+  //       }
+  //     } else {
+  //       console.log(' No result!!', resultInfo);
+  //     }
+
+  //   }
+  // });
 
 
   pryvHF.pryvConn = connection;
@@ -201,6 +250,7 @@ document.onreadystatechange = function () {
   document.getElementById('loading').style.display = 'none';
   document.getElementById('logo-pryv').style.display = 'block';
   var state = document.readyState;
+
   if (state === 'complete') {
     var settings = getSettingsFromURL();
     if (settings) {
@@ -209,31 +259,48 @@ document.onreadystatechange = function () {
         setupConnection(connection);
       });
     } else {
-
-      // Authenticate user
+      
       var authSettings = {
-        requestingAppId: 'app-web-hfdemo',
-        requestedPermissions: [
-          {
-            streamId: 'hfdemo',
-            defaultName: 'Demo HF',
-            level: 'manage'
-          }
-        ],
-        returnURL: false,
-        spanButtonID: 'pryv-button',
-        callbacks: {
-          needSignin: null,
-          needValidation: null,
-          signedIn: function (connect) {
-            setupShareLink(connect);
-            connect.fetchStructure(function () {
-              setupConnection(connect);
-            });
-          }
+        spanButtonID: 'pryv-button', // span id the DOM that will be replaced by the Service specific button
+        onStateChange: pryvAuthStateChange, // event Listener for Authentication steps
+        authRequest: { // See: https://api.pryv.com/reference/#auth-request
+          requestingAppId: 'app-web-hfdemo',
+          languageCode: 'fr', // optional (default english)
+          requestedPermissions: [
+            {
+              streamId: 'hfdemo',
+              defaultName: 'Demo HF',
+              level: 'manage'
+            }
+          ],
+          clientData: {
+            'app-web-auth:description': {
+              'type': 'note/txt', 'content': 'This is a consent message.'
+            }
+          },
         }
       };
-      pryv.Auth.setup(authSettings);
+      
+      function pryvAuthStateChange(state) { // called each time the authentication state changed
+        console.log('##pryvAuthStateChange', state);
+        if (state.id === Pryv.Browser.AuthStates.AUTHORIZED) {
+          connection = new Pryv.Connection(state.apiEndpoint);
+          console.log(connection);
+          setupShareLink();
+          setupConnection(connection);
+        }
+        if (state.id === Pryv.Browser.AuthStates.LOGOUT) {
+          connection = null;
+          logToConsole('# Logout');
+        }
+      }
+      
+      var serviceInfoUrl = "https://reg.pryv.me/service/info";
+      (async function () {
+        var service = await Pryv.Browser.setupAuth(authSettings, serviceInfoUrl);
+      })();
+
+      // pryv.Auth.setup(authSettings);
     }
   }
 };
